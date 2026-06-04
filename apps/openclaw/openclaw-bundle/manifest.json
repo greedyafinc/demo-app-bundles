@@ -1,0 +1,14 @@
+{
+  "slug": "openclaw",
+  "name": "OpenClaw",
+  "version": "1.0.0",
+  "sdkVersion": "1.0.0",
+  "kind": "node-service",
+  "service": {
+    "command": "bin/node",
+    "args": ["start.mjs"],
+    "workingDir": ".",
+    "healthPath": "/health",
+    "readyTimeoutMs": 45000
+  }
+}

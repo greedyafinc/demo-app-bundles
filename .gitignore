@@ -1,0 +1,45 @@
+# Regenerable build artifacts — apps under apps/ are SOURCE + build tooling only.
+# The build scripts download runtimes, install deps, and produce the release .zip;
+# none of that belongs in git. (Already-tracked upstream test-fixture .zip files
+# are unaffected — .gitignore only applies to untracked paths.)
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Bundle build staging + downloaded runtimes (CPython / Node)
+.bundle-build/
+**/runtime/node/
+**/runtime/python/
+
+# openclaw-bundle staged output + downloaded node binary
+apps/openclaw/openclaw-bundle/bin/
+apps/openclaw/openclaw-bundle/openclaw/
+
+# Build outputs
+dist/
+out/
+.next/
+.turbo/
+.vite/
+.cache/
+**/frontend/dist/
+**/apps/web/out/
+coverage/
+
+# Release archives (published as GitHub Releases, not committed).
+# Targets build outputs by name so legitimate upstream test-fixture .zip files
+# (e.g. apps/openclaw/openclaw/test/fixtures/**) stay tracked.
+*-bundle-*.zip
+
+# Python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs / OS cruft
+*.log
+.DS_Store
