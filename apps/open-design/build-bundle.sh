@@ -17,10 +17,8 @@ NODE_TARBALL="node-v${NODE_VERSION}-${NODE_PLATFORM}.tar.gz"
 NODE_URL="https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}"
 NODE_LOCAL_DIR="$BUILD_DIR/node-v${NODE_VERSION}-${NODE_PLATFORM}"
 OUT_ZIP="$SCRIPT_DIR/opendesign-bundle-${NODE_PLATFORM}.zip"
-# Desktop marketplace "Local" installs read this fixed path (the `localUrl` in
-# apps/desktop/src/data/apps.js). We copy the freshly-built zip here at the end
-# so toggling Local + (re)installing OpenDesign picks up this build.
-LOCAL_DEST="/tmp/opendesign-bundle-${NODE_PLATFORM}.zip"
+# OUT_ZIP lives in this app dir — exactly where the desktop "Local" install
+# resolves it: apps.js localUrl = file://${DEMO_BUNDLES_DIR}/apps/open-design/<zip>.
 BUNDLE_VERSION="1.1.0"
 
 log() { printf "\033[1;36m[bundle]\033[0m %s\n" "$*"; }
@@ -145,17 +143,13 @@ rm -f "$OUT_ZIP"
 SIZE_BYTES=$(wc -c < "$OUT_ZIP" | tr -d ' ')
 SHA256=$(shasum -a 256 "$OUT_ZIP" | awk '{print $1}')
 
-# Copy to the fixed path the desktop's local-install `localUrl` points at, so a
-# Marketplace "Local" install of OpenDesign consumes this build directly.
-cp -f "$OUT_ZIP" "$LOCAL_DEST"
-
 log "✓ Bundle ready: $OUT_ZIP"
-log "  copied to: $LOCAL_DEST (used by desktop 'Local' installs)"
 log "  size:   ${SIZE_BYTES} bytes"
 log "  sha256: ${SHA256}"
 log "  version: ${BUNDLE_VERSION}"
 echo
-echo "Desktop 'Local' install reads ${LOCAL_DEST} (apps.js localUrl) — already in sync."
+echo "Desktop 'Local' install reads this in-repo bundle via apps.js localUrl:"
+echo "    file://\${DEMO_BUNDLES_DIR}/apps/open-design/opendesign-bundle-${NODE_PLATFORM}.zip"
 echo
 echo "For a published/remote release, paste into apps/desktop/src/data/apps.js bundle:"
 echo "    url: 'file://${OUT_ZIP}',"

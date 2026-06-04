@@ -42,9 +42,8 @@ PBS_URL="https://github.com/astral-sh/python-build-standalone/releases/download/
 PY_LOCAL_DIR="$BUILD_DIR/python-${PY_VERSION}-${PBS_TRIPLE}"
 
 OUT_ZIP="$SCRIPT_DIR/hermes-webui-bundle-${NODE_PLATFORM}.zip"
-# Desktop marketplace "Local" installs read this fixed path (the `localUrl` in
-# apps/desktop/src/data/apps.js). We copy the freshly-built zip here at the end.
-LOCAL_DEST="/tmp/hermes-webui-bundle-${NODE_PLATFORM}.zip"
+# OUT_ZIP lives in this app dir — exactly where the desktop "Local" install
+# resolves it: apps.js localUrl = file://${DEMO_BUNDLES_DIR}/apps/hermes/<zip>.
 
 log() { printf "\033[1;36m[bundle]\033[0m %s\n" "$*"; }
 die() { printf "\033[1;31m[bundle]\033[0m %s\n" "$*" >&2; exit 1; }
@@ -217,17 +216,15 @@ rm -f "$OUT_ZIP"
 SIZE_BYTES=$(wc -c < "$OUT_ZIP" | tr -d ' ')
 SHA256=$(shasum -a 256 "$OUT_ZIP" | awk '{print $1}')
 
-cp -f "$OUT_ZIP" "$LOCAL_DEST"
-
 log "✓ Bundle ready: $OUT_ZIP"
-log "  copied to: $LOCAL_DEST (used by desktop 'Local' installs)"
+log "  desktop 'Local' installs read this in-repo path via \${DEMO_BUNDLES_DIR}"
 log "  size:   ${SIZE_BYTES} bytes"
 log "  sha256: ${SHA256}"
 log "  version: ${BUNDLE_VERSION}"
 echo
 echo "For a published/remote release, paste into apps/desktop/src/data/apps.js bundle:"
 echo "    url: '<published-release-url>/hermes-webui-bundle-${NODE_PLATFORM}.zip',"
-echo "    localUrl: 'file://${LOCAL_DEST}',"
+echo "    localUrl: 'file://\${DEMO_BUNDLES_DIR}/apps/hermes/hermes-webui-bundle-${NODE_PLATFORM}.zip',"
 echo "    version: '${BUNDLE_VERSION}',"
 echo "    sha256: '${SHA256}',"
 echo "    sizeBytes: ${SIZE_BYTES},"

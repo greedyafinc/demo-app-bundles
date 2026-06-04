@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Build the OpenClaw marketplace bundle for a specific OS/arch target.
-# Produces /tmp/openclaw-bundle-${NODE_PLATFORM}.zip with sha256 + size.
+# Produces ./openclaw-bundle-${NODE_PLATFORM}.zip (in this dir) with sha256 + size.
+# The desktop "Local" install reads it from here via apps.js localUrl
+# (file://${DEMO_BUNDLES_DIR}/apps/openclaw/openclaw-bundle/<zip>).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -12,7 +14,7 @@ BUNDLE_DIR="$SCRIPT_DIR"
 # ship darwin-arm64; override via env to test other targets.
 NODE_VERSION="${NODE_VERSION:-v24.0.0}"
 NODE_PLATFORM="${NODE_PLATFORM:-darwin-arm64}"
-OUT="/tmp/openclaw-bundle-${NODE_PLATFORM}.zip"
+OUT="$SCRIPT_DIR/openclaw-bundle-${NODE_PLATFORM}.zip"
 NODE_TARBALL="node-${NODE_VERSION}-${NODE_PLATFORM}.tar.gz"
 NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/${NODE_TARBALL}"
 
