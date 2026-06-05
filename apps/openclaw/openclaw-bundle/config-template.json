@@ -1,0 +1,24 @@
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "loopback",
+    "auth": { "mode": "token" },
+    "controlUi": {}
+  },
+  "agents": {
+    "defaults": {
+      "model": "auto",
+      "sandbox": { "mode": "all" }
+    }
+  },
+  "channels": {},
+  "tools": {
+    "fs": { "workspaceOnly": true },
+    "exec": { "applyPatch": { "workspaceOnly": true } }
+  },
+  "plugins": { "allow": [] },
+  "env": {
+    "OPENAI_API_KEY": "$env.OPENAI_API_KEY",
+    "OPENAI_BASE_URL": "$env.OPENAI_BASE_URL"
+  }
+}
