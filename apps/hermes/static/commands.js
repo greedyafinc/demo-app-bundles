@@ -32,6 +32,7 @@ const COMMANDS=[
   {name:'reasoning', desc:t('cmd_reasoning'), fn:cmdReasoning, arg:'show|hide|none|minimal|low|medium|high|xhigh|max', subArgs:['show','hide','none','minimal','low','medium','high','xhigh','max'], noEcho:true},
   {name:'yolo', desc:t('cmd_yolo'), fn:cmdYolo, noEcho:true},
   {name:'branch', desc:t('cmd_branch'), fn:cmdBranch, arg:'[name]', noEcho:true},
+  {name:'tour', desc:t('cmd_tour'), fn:cmdTour, noEcho:true},
 ];
 
 const SLASH_SUBARG_SOURCES={
@@ -310,6 +311,13 @@ function cmdHelp(){
   S.messages.push(msg);
   renderMessages();
   showToast(t('type_slash'));
+}
+
+// Replay the first-run orientation tour on demand (tour.js). Unlike the
+// automatic first-run pass, replay never re-records the `tutorial_seen` flag.
+function cmdTour(){
+  if(typeof window.startTour==='function') window.startTour({replay:true});
+  else showToast(t('tour_unavailable')); // tour.js failed to load — tell the user
 }
 
 function cmdClear(){

@@ -1674,6 +1674,7 @@ function applyBotName(){
     window._showTokenUsage=!!s.show_token_usage;
     window._showQuotaChip=s.show_quota_chip===true;
     window._hideEmptyStateSuggestions=s.hide_empty_state_suggestions===true;
+    window._tutorialSeen=s.tutorial_seen===true; // first-run orientation tour (tour.js): server is the source of truth
     applyEmptyStateSuggestionPref();
     window._showTps=!!s.show_tps;
     window._fadeTextEffect=!!s.fade_text_effect;
@@ -1775,6 +1776,7 @@ function applyBotName(){
     window._showTokenUsage=false;
     window._showQuotaChip=false;
     window._hideEmptyStateSuggestions=false;
+    window._tutorialSeen=false; // first-run orientation tour (tour.js): no server data on error → default to not-seen
     applyEmptyStateSuggestionPref();
     window._showTps=false;
     window._fadeTextEffect=false;
