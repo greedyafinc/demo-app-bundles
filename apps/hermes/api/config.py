@@ -5016,6 +5016,7 @@ def _get_session_agent_lock(session_id: str) -> threading.Lock:
 _SETTINGS_DEFAULTS = {
     "default_workspace": str(DEFAULT_WORKSPACE),
     "onboarding_completed": False,
+    "tutorial_seen": False,  # first-run orientation tour (tour.js) — auto-show once, then never again
     "send_key": "enter",  # 'enter' or 'ctrl+enter'
     "show_token_usage": False,  # show input/output token badge below assistant messages
     "show_quota_chip": False,  # show ambient provider quota chip in composer footer (default off; wide desktop only when enabled, see style.css @media)
@@ -5180,6 +5181,7 @@ _SETTINGS_INT_RANGES = {
 }
 _SETTINGS_BOOL_KEYS = {
     "onboarding_completed",
+    "tutorial_seen",
     "show_token_usage",
     "show_quota_chip",
     "hide_empty_state_suggestions",
