@@ -1246,6 +1246,15 @@
   .tour-skip{background:none;border:none;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:4px 2px;text-decoration:underline;text-underline-offset:2px;}
   .tour-skip:hover{color:var(--text);}
   @media (prefers-reduced-motion:reduce){.tour-highlight{transition:none;}}
+  /* Closing "What you can do" showcase step */
+  .tour-bubble.wide{width:min(400px,calc(100vw - 32px));}
+  .tour-showcase{flex-direction:column;gap:11px;margin-top:13px;}
+  .tour-sc-row{display:flex;align-items:flex-start;gap:11px;text-align:left;}
+  .tour-sc-ic{flex:0 0 auto;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--accent-bg,rgba(0,0,0,.06));color:var(--accent-text);}
+  .tour-sc-ic svg{width:16px;height:16px;}
+  .tour-sc-txt{min-width:0;}
+  .tour-sc-label{font-size:13px;font-weight:700;color:var(--text);line-height:1.25;}
+  .tour-sc-ex{font-size:12px;color:var(--muted);line-height:1.4;margin-top:2px;}
   .onboarding-card{width:min(980px,100%);max-height:min(760px,94vh);overflow:auto;border:1px solid var(--accent-bg-strong);border-radius:24px;background:linear-gradient(180deg,rgba(20,30,44,.98),rgba(11,17,27,.98));box-shadow:0 24px 80px rgba(0,0,0,.45);}
   .onboarding-shell{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);}
   .onboarding-sidebar{padding:28px 24px;border-right:1px solid var(--border);background:linear-gradient(180deg,var(--accent-bg),transparent);}

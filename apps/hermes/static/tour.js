@@ -75,8 +75,39 @@
         body:  tr('tour_step5_body', 'Hermes can run jobs in the background and on a schedule — explore these under Tasks.') },
       { anchor: ['.rail .nav-tab[data-panel="settings"]', '.sidebar-nav .nav-tab[data-panel="settings"]'],
         title: tr('tour_step6_title', 'Make it yours'),
-        body:  tr('tour_step6_body', "Themes, models, and more live in Settings. That's it — start chatting!") },
+        body:  tr('tour_step6_body', 'Themes, models, and more live in Settings.') },
+      // Closing showcase (centered, no spotlight): real ways people use the agent,
+      // each grounded in a tool that works in the gateway-only fat bundle. The
+      // primary button drops a sample prompt into the composer (see tryExample).
+      { anchor: null, showcase: buildShowcase(),
+        title: tr('tour_sc_title', 'What you can do') },
     ];
+  }
+
+  // Inline-SVG glyphs for the showcase rows. These are STATIC, authored strings
+  // (never user input), so setting them via innerHTML is safe. They use
+  // currentColor so they pick up the themed accent.
+  var ICONS = {
+    files: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>',
+    skills: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.7 4.6L18.5 9.3l-4.8 1.7L12 16l-1.7-5L5.5 9.3l4.8-1.7z"/><path d="M19 14.5l.7 1.9 1.8.6-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.6z"/></svg>',
+    schedule: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    models: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l4 4"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-3.8-.9L3 21l1.1-4.2A8.4 8.4 0 1 1 21 11.5z"/></svg>',
+  };
+
+  // Showcase content (grounded in the bundled agent's real, gateway-bundle tools).
+  // tr() fallbacks keep it working even before the i18n keys are translated.
+  function buildShowcase() {
+    return {
+      tagline: tr('tour_sc_tagline', 'A persistent agent that works in your files, learns reusable skills, and runs on a schedule.'),
+      items: [
+        { icon: 'files',    label: tr('tour_sc1_label', 'Build real files'),       example: tr('tour_sc1_ex', '"Draft a project plan as a Markdown file in my workspace."') },
+        { icon: 'skills',   label: tr('tour_sc2_label', 'Learn reusable skills'),  example: tr('tour_sc2_ex', '"Convert these CSVs to clean JSON — then save it as a skill."') },
+        { icon: 'schedule', label: tr('tour_sc3_label', 'Run on a schedule'),      example: tr('tour_sc3_ex', '"Each morning, write a standup note from my git log."') },
+        { icon: 'models',   label: tr('tour_sc4_label', 'Any model, one chat'),    example: tr('tour_sc4_ex', '"/model to switch, then summarize this thread in 3 bullets."') },
+      ],
+      tryPrompt: tr('tour_sc_try_prompt', 'Create a Markdown file in my workspace called ideas.md with 5 weekend project ideas, then read it back to me.'),
+    };
   }
 
   // ── tour state ─────────────────────────────────────────────────────────────
@@ -86,6 +117,7 @@
   var ST = { active: false, idx: 0, gen: 0, steps: [], replay: false,
              overlay: null, highlight: null, bubble: null,
              elTitle: null, elBody: null, elProg: null, elBack: null, elNext: null,
+             elSkip: null, elShowcase: null,
              anchorEl: null, onResize: null, onKey: null, prevFocus: null,
              repoQueued: false, inerted: null };
 
@@ -112,6 +144,7 @@
 
     var h = document.createElement('h3'); h.id = 'tourTitle';
     var p = document.createElement('p'); p.id = 'tourBody';
+    var showcase = document.createElement('div'); showcase.className = 'tour-showcase'; showcase.style.display = 'none';
 
     var foot = document.createElement('div'); foot.className = 'tour-foot';
     var prog = document.createElement('span'); prog.className = 'tour-progress';
@@ -129,25 +162,73 @@
 
     var next = document.createElement('button');
     next.type = 'button'; next.className = 'tour-btn primary'; next.dataset.tourNext = '1';
-    next.addEventListener('click', function () { (ST.idx >= ST.steps.length - 1) ? finish(true) : go(1); });
+    next.addEventListener('click', function () {
+      var step = ST.steps[ST.idx];
+      if (step && step.showcase) { tryExample(step.showcase.tryPrompt); return; } // CTA: drop a sample into the composer
+      (ST.idx >= ST.steps.length - 1) ? finish(true) : go(1);
+    });
 
     actions.appendChild(skip); actions.appendChild(back); actions.appendChild(next);
     foot.appendChild(prog); foot.appendChild(actions);
-    bubble.appendChild(h); bubble.appendChild(p); bubble.appendChild(foot);
+    bubble.appendChild(h); bubble.appendChild(p); bubble.appendChild(showcase); bubble.appendChild(foot);
     overlay.appendChild(highlight); overlay.appendChild(bubble);
     document.body.appendChild(overlay);
 
     ST.overlay = overlay; ST.highlight = highlight; ST.bubble = bubble;
     ST.elTitle = h; ST.elBody = p; ST.elProg = prog; ST.elBack = back; ST.elNext = next;
+    ST.elSkip = skip; ST.elShowcase = showcase;
   }
 
   function renderBubble(step, i) {
     var isLast = i === ST.steps.length - 1;
     ST.elTitle.textContent = step.title;
-    ST.elBody.textContent = step.body;
+    if (step.showcase) {
+      ST.elBody.textContent = step.showcase.tagline;
+      renderShowcase(ST.elShowcase, step.showcase);
+      ST.elShowcase.style.display = 'flex';
+      ST.bubble.classList.add('wide');
+      ST.elNext.textContent = tr('tour_sc_try', 'Try an example →');
+      ST.elSkip.textContent = tr('tour_sc_done', 'Maybe later');
+    } else {
+      ST.elBody.textContent = step.body;
+      ST.elShowcase.style.display = 'none';
+      ST.bubble.classList.remove('wide');
+      ST.elNext.textContent = isLast ? tr('tour_done', "You're all set") : tr('tour_next', 'Next');
+      ST.elSkip.textContent = tr('tour_skip', 'Skip tour');
+    }
     ST.elProg.textContent = (i + 1) + ' / ' + ST.steps.length;
     ST.elBack.style.display = i > 0 ? '' : 'none';
-    ST.elNext.textContent = isLast ? tr('tour_done', "You're all set") : tr('tour_next', 'Next');
+  }
+
+  // Populate the showcase rows (icon glyph + label + example prompt). Icons are
+  // trusted static SVG (innerHTML ok); example text uses textContent.
+  function renderShowcase(el, sc) {
+    el.innerHTML = '';
+    (sc.items || []).forEach(function (it) {
+      var row = document.createElement('div'); row.className = 'tour-sc-row';
+      var ic = document.createElement('span'); ic.className = 'tour-sc-ic'; ic.innerHTML = ICONS[it.icon] || ICONS.chat;
+      var txt = document.createElement('div'); txt.className = 'tour-sc-txt';
+      var lab = document.createElement('div'); lab.className = 'tour-sc-label'; lab.textContent = it.label;
+      var ex = document.createElement('div'); ex.className = 'tour-sc-ex'; ex.textContent = it.example;
+      txt.appendChild(lab); txt.appendChild(ex);
+      row.appendChild(ic); row.appendChild(txt);
+      el.appendChild(row);
+    });
+  }
+
+  // "Try an example": close the tour and drop the sample prompt into the composer
+  // (focused, cursor at end) so the user can review it and press Enter. We don't
+  // auto-send — the user stays in control of running an agent task on their machine.
+  function tryExample(prompt) {
+    var msg = document.getElementById('msg');
+    finish(true); // close + record seen + restore focus to #msg
+    if (!msg) return;
+    try {
+      msg.value = prompt;
+      msg.dispatchEvent(new Event('input', { bubbles: true })); // enable Send + autosize
+      msg.focus();
+      try { msg.selectionStart = msg.selectionEnd = msg.value.length; } catch (_) {}
+    } catch (_) {}
   }
 
   // Modal semantics: hide everything behind the overlay from the accessibility tree
