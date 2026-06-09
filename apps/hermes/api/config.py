@@ -5122,6 +5122,13 @@ def _normalize_appearance(theme, skin) -> tuple[str, str]:
     return next_theme, next_skin
 
 
+# Serializes the read-modify-write of settings.json in save_settings(). This is
+# a SEPARATE lock from _cfg_lock (which guards config.yaml): save_settings()
+# calls load_settings(), which calls get_config(), which can acquire _cfg_lock —
+# reusing _cfg_lock here would deadlock, since threading.Lock is not reentrant.
+_settings_lock = threading.Lock()
+
+
 def load_settings() -> dict:
     """Load settings from disk, merging with defaults for any missing keys."""
     settings = dict(_SETTINGS_DEFAULTS)
@@ -5208,7 +5215,21 @@ _SETTINGS_LANG_RE = __import__("re").compile(r"^[a-zA-Z]{2,10}(-[a-zA-Z0-9]{2,8}
 
 
 def save_settings(settings: dict) -> dict:
-    """Save settings to disk. Returns the merged settings. Ignores unknown keys."""
+    """Save settings to disk. Returns the merged settings. Ignores unknown keys.
+
+    The full read-modify-write (load_settings -> merge POSTed fields ->
+    write_text) runs under _settings_lock so two near-simultaneous POSTs — e.g.
+    the appearance autosave racing any other settings writer — can't interleave
+    and clobber each other's changes (lost update). The HTTP server is a
+    ThreadingHTTPServer, so concurrent requests genuinely run on separate
+    threads. Mirrors the _cfg_lock pattern used for config.yaml.
+    """
+    with _settings_lock:
+        return _save_settings_unlocked(settings)
+
+
+def _save_settings_unlocked(settings: dict) -> dict:
+    """Inner body of save_settings(). MUST be called holding _settings_lock."""
     current = load_settings()
     pending_theme = current.get("theme")
     pending_skin = current.get("skin")
