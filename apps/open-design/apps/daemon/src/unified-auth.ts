@@ -16,6 +16,9 @@
 // TypeScript because Open Design is a standalone pnpm workspace that cannot
 // import a package from the surrounding UnifiedApp repo.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 // Refresh the cached token this many ms before its real expiry so a request
 // never races a rollover. unified-api caps internal-JWT age at ~5 min.
 const REFRESH_MARGIN_MS = 30_000;
@@ -53,6 +56,40 @@ function requireEnv(name: string): string {
 }
 
 /**
+ * Current loopback-broker coordinates (url, shared-secret).
+ *
+ * Re-read from `$OD_DATA_DIR/.broker.json` — which the desktop host rewrites on
+ * every spawn AND reuse — falling back to the env injected at spawn time. The
+ * broker URL + secret rotate on every desktop launch, so a daemon REUSED across
+ * a desktop restart (or kept alive by a sibling process that has since quit)
+ * holds stale env coords and every mint fails with ECONNREFUSED ("fetch
+ * failed") once its cached app token expires. Re-reading the file each mint
+ * lets the daemon self-heal without a restart, mirroring the Python bundles'
+ * `_broker_coords` and the host's `write_broker_coords` (desktop_core
+ * service.rs).
+ */
+function brokerCoords(): { url: string; token: string } {
+  const dataDir = process.env.OD_DATA_DIR;
+  if (dataDir) {
+    try {
+      const raw = JSON.parse(readFileSync(join(dataDir, '.broker.json'), 'utf8')) as {
+        url?: string;
+        token?: string;
+      };
+      const url = (raw.url ?? '').replace(/\/+$/, '');
+      const token = raw.token ?? '';
+      if (url && token) return { url, token };
+    } catch {
+      // missing/partial file → fall back to the spawn-time env
+    }
+  }
+  return {
+    url: requireEnv('UNIFIED_BROKER_URL').replace(/\/+$/, ''),
+    token: requireEnv('UNIFIED_BROKER_TOKEN'),
+  };
+}
+
+/**
  * Mint (or return a cached) app-scoped access token from the loopback broker.
  * Cached until shortly before expiry; `force` bypasses the cache for the
  * one-shot retry after a 401.
@@ -63,8 +100,7 @@ export async function getUnifiedToken({ force = false }: { force?: boolean } = {
     return cached.token;
   }
 
-  const brokerUrl = requireEnv('UNIFIED_BROKER_URL').replace(/\/+$/, '');
-  const brokerToken = requireEnv('UNIFIED_BROKER_TOKEN');
+  const { url: brokerUrl, token: brokerToken } = brokerCoords();
   const slug = requireEnv('UNIFIED_APP_SLUG');
 
   const res = await fetch(`${brokerUrl}/token`, {
