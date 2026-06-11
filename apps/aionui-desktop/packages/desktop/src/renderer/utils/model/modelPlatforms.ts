@@ -19,6 +19,16 @@ const buildLogoAssetUrl = (path: string): string => {
 };
 
 /**
+ * UnifiedAI 平台标识与图标
+ * UnifiedAI platform value + self-contained logo (hub-and-spokes mark).
+ * Inline data URI so it renders without the backend asset route.
+ */
+export const UNIFIED_PLATFORM_VALUE = 'unified';
+
+export const UNIFIED_LOGO_DATA_URI =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236C5CE7' stroke-width='1.7' stroke-linecap='round'><circle cx='12' cy='12' r='3.4'/><path d='M12 8.6V5.4M12 18.6v-3.2M8.6 12H5.4M18.6 12h-3.2M9.6 9.6 7.4 7.4M16.6 16.6l-2.2-2.2M14.4 9.6l2.2-2.2M7.4 16.6l2.2-2.2'/><circle cx='12' cy='4' r='1.1'/><circle cx='12' cy='20' r='1.1'/><circle cx='4' cy='12' r='1.1'/><circle cx='20' cy='12' r='1.1'/><circle cx='6.3' cy='6.3' r='1.1'/><circle cx='17.7' cy='17.7' r='1.1'/><circle cx='17.7' cy='6.3' r='1.1'/><circle cx='6.3' cy='17.7' r='1.1'/></svg>";
+
+/**
  * 平台类型
  * Platform type
  */
@@ -54,6 +64,16 @@ export interface PlatformConfig {
  * 4+ 预设供应商
  */
 export const MODEL_PLATFORMS: PlatformConfig[] = [
+  // UnifiedAI — OAuth sign-in, no API key; base_url/api_key are filled from the
+  // main process (loopback gateway proxy) after sign-in. Speaks the OpenAI
+  // protocol end to end, hence platform: 'custom'.
+  {
+    name: 'UnifiedAI',
+    value: UNIFIED_PLATFORM_VALUE,
+    logo: UNIFIED_LOGO_DATA_URI,
+    platform: 'custom',
+  },
+
   // 自定义选项（需要用户输入 base url）/ Custom option (requires user to input base url)
   { name: 'Custom', value: 'custom', logo: null, platform: 'custom', i18nKey: 'settings.platformCustom' },
 
@@ -362,6 +382,14 @@ export const isGeminiPlatform = (platform: PlatformType): boolean => {
 export const isCustomOption = (value: string): boolean => {
   const platform = getPlatformByValue(value);
   return value === 'custom' && !platform?.base_url;
+};
+
+/**
+ * 检查是否为 UnifiedAI 选项（OAuth 登录，无需 API Key）
+ * Check if it's the UnifiedAI option (OAuth sign-in, no API key)
+ */
+export const isUnifiedOption = (value: string): boolean => {
+  return value === UNIFIED_PLATFORM_VALUE;
 };
 
 // Re-export from common for renderer convenience

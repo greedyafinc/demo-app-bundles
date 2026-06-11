@@ -92,7 +92,10 @@ export default defineConfig(({ mode }) => {
         // '@aionui/web-host' excluded so its TS sources (which use ESM ".js" import specifiers)
         // are bundled by esbuild rather than left as `require('@aionui/web-host')`, which Node
         // cannot resolve because the package ships no compiled .js files (workspace-only).
-        externalizeDepsPlugin({ exclude: ['fix-path', '@aionui/web-host'] }),
+        // '@unifiedai/sdk' excluded (bundled inline) so the packaged app doesn't need it in
+        // node_modules; its lazy @napi-rs/keyring import stays external below and is never
+        // executed because we pass a file-backed keychain adapter.
+        externalizeDepsPlugin({ exclude: ['fix-path', '@aionui/web-host', '@unifiedai/sdk'] }),
         ...(isDevelopment
           ? [
               {
@@ -133,6 +136,9 @@ export default defineConfig(({ mode }) => {
             // Built-in MCP server entry points (compiled by scripts/build-mcp-servers.js via esbuild,
             // not vite — esbuild bundles all deps for self-contained execution by external node processes)
           },
+          // @unifiedai/sdk's OS-keychain adapter lazily imports this native module;
+          // we always pass a file-backed adapter, so the import never runs.
+          external: ['@napi-rs/keyring'],
           onwarn(warning, warn) {
             if (warning.code === 'EVAL') return;
             warn(warning);

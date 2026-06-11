@@ -12,6 +12,14 @@ import { EventEmitter } from 'events';
 import { recordAutoUpdateQuitAndInstall, recordAutoUpdateStatus } from './autoUpdateDiagnostics';
 
 /**
+ * UnifiedAI marketplace build: electron-updater is wired to the UPSTREAM
+ * iOfficeAI/AionUi releases feed (app-update.yml), so any check/download from
+ * this modified build would replace it with stock AionUi. Updates ship through
+ * the marketplace instead; explicit env opt-in re-enables the stock updater.
+ */
+const UPDATES_ENABLED = process.env.AIONUI_ENABLE_AUTO_UPDATE === '1';
+
+/**
  * Returns the appropriate update channel name based on the current platform and architecture.
  * Returns undefined for the default channel (Windows x64 / Linux x64).
  */
@@ -263,6 +271,11 @@ class AutoUpdaterService extends EventEmitter {
 
   async checkForUpdates(): Promise<{ success: boolean; updateInfo?: UpdateInfo; error?: string }> {
     try {
+      if (!UPDATES_ENABLED) {
+        log.info('Auto-update disabled in UnifiedAI marketplace build; reporting up to date');
+        this.broadcastStatus({ status: 'not-available' });
+        return { success: true };
+      }
       if (!this._isInitialized) {
         throw new Error('AutoUpdaterService not initialized');
       }
@@ -294,6 +307,9 @@ class AutoUpdaterService extends EventEmitter {
 
   async downloadUpdate(): Promise<{ success: boolean; error?: string }> {
     try {
+      if (!UPDATES_ENABLED) {
+        return { success: false, error: 'Auto-update is disabled in the UnifiedAI marketplace build' };
+      }
       if (!this._isInitialized) {
         throw new Error('AutoUpdaterService not initialized');
       }
@@ -331,6 +347,10 @@ class AutoUpdaterService extends EventEmitter {
    * Check for updates and notify (for startup)
    */
   async checkForUpdatesAndNotify(): Promise<void> {
+    if (!UPDATES_ENABLED) {
+      log.info('Auto-update disabled in UnifiedAI marketplace build; skipping startup check');
+      return;
+    }
     try {
       // Ensure clean state: prevent stale allowDowngrade=true from prior setAllowPrerelease(true) calls
       autoUpdater.allowDowngrade = false;

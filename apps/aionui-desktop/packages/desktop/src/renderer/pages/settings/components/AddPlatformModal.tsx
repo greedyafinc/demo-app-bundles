@@ -4,8 +4,8 @@ import { ipcBridge } from '@/common';
 import { uuid } from '@/common/utils';
 import { isGoogleApisHost } from '@/common/utils/urlValidation';
 import ModalHOC from '@/renderer/utils/ui/ModalHOC';
-import { Form, Input, Message, Select, Switch } from '@arco-design/web-react';
-import { LinkCloud, Edit, Search, Loading } from '@icon-park/react';
+import { Button, Form, Input, Message, Select, Switch } from '@arco-design/web-react';
+import { LinkCloud, CheckOne, Edit, Search, Loading } from '@icon-park/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useModeModeList from '@renderer/hooks/agent/useModeModeList';
@@ -15,13 +15,16 @@ import ApiKeyEditorModal from './ApiKeyEditorModal';
 import {
   MODEL_PLATFORMS,
   NEW_API_PROTOCOL_OPTIONS,
+  UNIFIED_LOGO_DATA_URI,
   detectNewApiProtocol,
   getPlatformByValue,
   isCustomOption,
   isGeminiPlatform,
   isNewApiPlatform,
+  isUnifiedOption,
   type PlatformConfig,
 } from '@/renderer/utils/model/modelPlatforms';
+import type { UnifiedStatus } from '@/common/types/provider/unifiedTypes';
 import type { DeepLinkAddProviderDetail } from '@/renderer/hooks/system/useDeepLink';
 
 /**
@@ -233,6 +236,43 @@ const AddPlatformModal = ModalHOC<{
   const isBedrock = platform === 'bedrock';
   const isGemini = isGeminiPlatform(platform);
   const isNewApi = isNewApiPlatform(platform);
+  const isUnified = isUnifiedOption(platformValue);
+
+  // UnifiedAI OAuth 状态 / UnifiedAI OAuth state — base_url/api_key come from the
+  // main process (loopback gateway proxy) instead of user input.
+  const [unifiedStatus, setUnifiedStatus] = useState<UnifiedStatus | null>(null);
+  const [unifiedSigningIn, setUnifiedSigningIn] = useState(false);
+
+  const applyUnifiedStatus = (status: UnifiedStatus, fetchModels: boolean) => {
+    setUnifiedStatus(status);
+    if (status.baseUrl && status.apiKey) {
+      form.setFieldValue('base_url', status.baseUrl);
+      form.setFieldValue('api_key', status.apiKey);
+      if (status.signedIn && fetchModels) void modelListState.mutate();
+    }
+  };
+
+  useEffect(() => {
+    if (!modalProps.visible || !isUnified) return;
+    void ipcBridge.unified.status.invoke().then((status) => {
+      applyUnifiedStatus(status, true);
+    });
+  }, [modalProps.visible, isUnified]);
+
+  const handleUnifiedSignIn = async () => {
+    setUnifiedSigningIn(true);
+    try {
+      const status = await ipcBridge.unified.signIn.invoke();
+      applyUnifiedStatus(status, true);
+      if (!status.signedIn) {
+        message.error(status.error || t('settings.unifiedSignInFailed'));
+      }
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : t('settings.unifiedSignInFailed'));
+    } finally {
+      setUnifiedSigningIn(false);
+    }
+  };
 
   // new-api 每模型协议选择状态 / new-api per-model protocol selection state
   const [modelProtocol, setModelProtocol] = useState<string>('openai');
@@ -266,7 +306,9 @@ const AddPlatformModal = ModalHOC<{
   // 1. Custom platform OR user entered a custom base URL (non-official, like local proxy)
   // 2. Input values differ from last "accepted suggestion" (avoid redundant detection after platform switch)
   const isNonOfficialBaseUrl = base_url && !isGoogleApisHost(base_url);
-  const shouldEnableDetection = isCustom || isNonOfficialBaseUrl;
+  // UnifiedAI 由主进程托管（本地回环代理），无需协议检测
+  // UnifiedAI is main-process managed (loopback proxy) — protocol detection is noise
+  const shouldEnableDetection = (isCustom || isNonOfficialBaseUrl) && !isUnified;
   // 只有在用户修改了输入值（相对于上次采纳建议时）才触发检测
   // Only trigger detection when input changed since last accepted suggestion
   const inputChangedSinceLastSwitch =
@@ -341,6 +383,11 @@ const AddPlatformModal = ModalHOC<{
     form
       .validate()
       .then((values) => {
+        // UnifiedAI requires a completed sign-in (fills base_url/api_key)
+        if (isUnified && (!values.base_url || !values.api_key)) {
+          message.warning(t('settings.unifiedSignInFirst'));
+          return;
+        }
         // 如果有 i18nKey 使用翻译后的名称，否则使用 platform 的 name
         // If i18nKey exists use translated name, otherwise use platform name
         const name = selectedPlatform?.i18nKey
@@ -434,6 +481,13 @@ const AddPlatformModal = ModalHOC<{
                   // model is a multi-select field — reset to an empty array, not
                   // '' (which would surface as a stray empty tag).
                   form.setFieldValue('model', []);
+                  // Entering or leaving UnifiedAI: drop the programmatically
+                  // filled loopback base_url/api_key so they never leak into
+                  // (or linger from) another platform's form state.
+                  if (isUnifiedOption(String(value)) || isUnified) {
+                    form.setFieldValue('base_url', undefined);
+                    form.setFieldValue('api_key', undefined);
+                  }
                 }
               }}
               renderFormat={(option) => {
@@ -491,12 +545,38 @@ const AddPlatformModal = ModalHOC<{
             </div>
           )}
 
+          {/* UnifiedAI 登录面板 / UnifiedAI sign-in panel */}
+          {isUnified && (
+            <div
+              className='flex items-center gap-12px rounded-8px px-12px py-10px mb-12px'
+              style={{ border: '1px solid var(--border-base)', background: 'var(--fill-1)' }}
+            >
+              <img src={UNIFIED_LOGO_DATA_URI} alt='UnifiedAI' style={{ width: 28, height: 28 }} />
+              <div className='flex flex-col flex-1 min-w-0'>
+                <span className='text-13px font-medium'>UnifiedAI</span>
+                <span className='text-11px text-t-secondary'>
+                  {unifiedStatus?.signedIn ? t('settings.unifiedSignedInHint') : t('settings.unifiedSignInHint')}
+                </span>
+              </div>
+              {unifiedStatus?.signedIn ? (
+                <span className='flex items-center gap-4px text-12px text-success shrink-0'>
+                  <CheckOne theme='outline' size={16} className='flex' />
+                  {t('settings.unifiedSignedIn')}
+                </span>
+              ) : (
+                <Button type='primary' size='small' loading={unifiedSigningIn} onClick={() => void handleUnifiedSignIn()}>
+                  {unifiedSigningIn ? t('settings.unifiedSigningIn') : t('settings.unifiedSignIn')}
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* API Key */}
           <Form.Item
-            hidden={isBedrock}
+            hidden={isBedrock || isUnified}
             label={t('settings.apiKey')}
-            required={!isBedrock}
-            rules={[{ required: !isBedrock }]}
+            required={!isBedrock && !isUnified}
+            rules={[{ required: !isBedrock && !isUnified }]}
             field={'api_key'}
             extra={
               <div className='space-y-2px'>
@@ -680,8 +760,13 @@ const AddPlatformModal = ModalHOC<{
                         }
                         return;
                       }
+                      // UnifiedAI: credentials come from sign-in, not user input
+                      if (isUnified && !api_key) {
+                        message.warning(t('settings.unifiedSignInFirst'));
+                        return;
+                      }
                       // For Gemini, no api_key check needed
-                      if (!isGemini && !api_key) {
+                      if (!isGemini && !isUnified && !api_key) {
                         message.warning(t('settings.pleaseEnterApiKey'));
                         return;
                       }

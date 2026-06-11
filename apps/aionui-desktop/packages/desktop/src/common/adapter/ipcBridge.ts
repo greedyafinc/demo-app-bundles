@@ -63,6 +63,7 @@ import type {
   UpdateDownloadResult,
 } from '../update/updateTypes';
 import type { Theme } from '@/common/theme/types';
+import type { UnifiedStatus } from '../types/provider/unifiedTypes';
 import type { ProtocolDetectionRequest, ProtocolDetectionResponse } from '../utils/protocolDetector';
 import { fromApiConversation, fromApiPaginatedConversations, toApiModelOptional } from './apiModelMapper';
 import {
@@ -1111,6 +1112,19 @@ export const theme = {
   setActive: bridge.buildProvider<void, Theme>('theme:set-active'),
   // any window → main: pull the currently cached resolved theme on load (null if none yet)
   requestCurrent: bridge.buildProvider<Theme | null, void>('theme:request-current'),
+};
+
+// ---------------------------------------------------------------------------
+// UnifiedAI — stays IPC (main process owns the OAuth session + loopback proxy)
+// ---------------------------------------------------------------------------
+
+export const unified = {
+  // renderer → main: current sign-in status + the loopback proxy provider config
+  status: bridge.buildProvider<UnifiedStatus, void>('unified:status'),
+  // renderer → main: interactive sign-in (opens the system browser for PKCE)
+  signIn: bridge.buildProvider<UnifiedStatus, void>('unified:sign-in'),
+  // renderer → main: clear the cached session
+  signOut: bridge.buildProvider<void, void>('unified:sign-out'),
 };
 
 // ---------------------------------------------------------------------------
