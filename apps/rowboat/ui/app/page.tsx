@@ -142,7 +142,10 @@ function PageBody() {
     name.toLowerCase().match(/\.(md|markdown)$/) ? "markdown" : "json";
   
   useEffect(() => {
-    setApiBase(window.config.apiBase);
+    // window.config is injected by a wrapping host (e.g. Electron). When the
+    // dashboard is served by the rowboatx server itself (the UnifiedApp
+    // marketplace bundle does this), the API is same-origin.
+    setApiBase(window.config?.apiBase ?? window.location.origin);
   }, []);
 
   const requestJson = useCallback(async (

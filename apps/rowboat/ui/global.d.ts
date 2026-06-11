@@ -2,7 +2,7 @@ export {};
 
 declare global {
   interface Window {
-    config: {
+    config?: {
       apiBase: string;
     };
   }

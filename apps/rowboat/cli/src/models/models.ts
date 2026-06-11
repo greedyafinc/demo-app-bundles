@@ -9,6 +9,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { IModelConfigRepo } from "./repo.js";
 import container from "../di/container.js";
 import z from "zod";
+import { unifiedApiBase, unifiedFetch } from "../unified/auth.js";
 
 export const Flavor = z.enum([
     "rowboat [free]",
@@ -19,6 +20,7 @@ export const Flavor = z.enum([
     "openai",
     "openai-compatible",
     "openrouter",
+    "unified",
 ]);
 
 export const Provider = z.object({
@@ -95,6 +97,21 @@ export async function getProvider(name: string = ""): Promise<ProviderV2> {
             providerMap[name] = createOllama({
                 baseURL,
                 headers
+            });
+            break;
+        case "unified":
+            // UnifiedAI gateway (unified-api). OpenAI-compatible surface; auth
+            // is per-request via the loopback-broker token (~5 min lifetime),
+            // injected by unifiedFetch — NOT a static apiKey — so the rotating
+            // credential never goes stale inside this cached provider instance.
+            // baseURL/apiKey in models.json are ignored on purpose: the gateway
+            // address comes from UNIFIED_API_URL and auth from the host broker.
+            providerMap[name] = createOpenAICompatible({
+                name,
+                apiKey: "unified-broker-managed",
+                baseURL: unifiedApiBase(),
+                headers,
+                fetch: unifiedFetch,
             });
             break;
         case "openai-compatible":
