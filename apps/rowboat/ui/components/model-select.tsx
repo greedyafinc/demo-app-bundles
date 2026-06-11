@@ -101,7 +101,20 @@ export function ModelSelect({ apiBase }: { apiBase: string }) {
     }
   };
 
-  const logoFor = (m: CatalogModel) => m.logo || getModelLogo(m);
+  // Brand icon resolution, in order:
+  //   1. a self-contained gateway logo (absolute/data: URL — the server nulls
+  //      origin-relative paths, which only resolve inside the UnifiedApp client),
+  //   2. the author brand data-URI bundled in @unifiedai/sdk (always renders).
+  // The onError swap covers a gateway URL that exists but fails to load.
+  const logoTheme = () =>
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+      ? ("dark" as const)
+      : ("light" as const);
+  const logoFor = (m: CatalogModel) => m.logo || getModelLogo(m, logoTheme());
+  const handleLogoError = (m: CatalogModel) => (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const fallback = getModelLogo(m, logoTheme());
+    if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+  };
   const selected = models.find((m) => m.id === current);
 
   return (
@@ -119,7 +132,12 @@ export function ModelSelect({ apiBase }: { apiBase: string }) {
             <span className="flex min-w-0 items-center gap-1.5">
               {selected && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoFor(selected)} alt="" className="h-3.5 w-3.5 shrink-0 rounded-sm" />
+                <img
+                  src={logoFor(selected)}
+                  onError={handleLogoError(selected)}
+                  alt=""
+                  className="h-3.5 w-3.5 shrink-0 rounded-sm"
+                />
               )}
               <span className="truncate">{selected?.name || current}</span>
             </span>
@@ -134,7 +152,12 @@ export function ModelSelect({ apiBase }: { apiBase: string }) {
             <SelectItem key={model.id} value={model.id}>
               <span className="flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={logoFor(model)} alt="" className="h-4 w-4 shrink-0 rounded-sm" />
+                <img
+                  src={logoFor(model)}
+                  onError={handleLogoError(model)}
+                  alt=""
+                  className="h-4 w-4 shrink-0 rounded-sm"
+                />
                 <span className="truncate">{model.name || model.id}</span>
               </span>
             </SelectItem>

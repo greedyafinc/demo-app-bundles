@@ -419,7 +419,17 @@ const routes = new Hono()
                 return c.json({ error: "UnifiedAI is not configured (not running inside the UnifiedApp desktop host)" }, 503);
             }
             try {
-                return c.json(await sdk.models.list({ include: ["author"] }));
+                const catalog = await sdk.models.list({ include: ["author"] });
+                // The gateway's `logo` is a path relative to the UnifiedApp web
+                // client's origin (e.g. "/logos/openai.svg") — unresolvable from
+                // this app's origin (broken <img>). Null it unless it is already
+                // self-contained; the dashboard then falls back to the brand
+                // data-URIs bundled in @unifiedai/sdk (getModelLogo).
+                const data = catalog.data.map((m) => ({
+                    ...m,
+                    logo: m.logo && /^(https?:|data:)/.test(m.logo) ? m.logo : null,
+                }));
+                return c.json({ ...catalog, data });
             } catch (err) {
                 return c.json({ error: err instanceof Error ? err.message : "gateway models fetch failed" }, 502);
             }
