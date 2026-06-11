@@ -28,6 +28,7 @@ import { listOnboardingModels } from '@x/core/dist/models/models-dev.js';
 import { testModelConnection } from '@x/core/dist/models/models.js';
 import { isSignedIn } from '@x/core/dist/account/account.js';
 import { listGatewayModels } from '@x/core/dist/models/gateway.js';
+import { isUnifiedSignedIn, signInUnified, signOutUnified, listUnifiedModels, unifiedApiBase } from '@x/core/dist/unified/auth.js';
 import type { IModelConfigRepo } from '@x/core/dist/models/repo.js';
 import type { IOAuthRepo } from '@x/core/dist/auth/repo.js';
 import { IGranolaConfigRepo } from '@x/core/dist/knowledge/granola/repo.js';
@@ -614,6 +615,20 @@ export function setupIpcHandlers() {
     },
     'oauth:list-providers': async () => {
       return listProviders();
+    },
+    'unified:status': async () => {
+      return { signedIn: await isUnifiedSignedIn(), gateway: unifiedApiBase() };
+    },
+    'unified:signIn': async () => {
+      // keychain -> UnifiedApp desktop handoff -> browser PKCE consent
+      return await signInUnified();
+    },
+    'unified:signOut': async () => {
+      await signOutUnified();
+      return { success: true };
+    },
+    'unified:models': async () => {
+      return await listUnifiedModels();
     },
     'oauth:getState': async () => {
       const repo = container.resolve<IOAuthRepo>('oauthRepo');

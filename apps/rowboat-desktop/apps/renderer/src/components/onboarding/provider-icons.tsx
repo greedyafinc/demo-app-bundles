@@ -105,3 +105,19 @@ export function GenericApiIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+export function UnifiedAIIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("size-5", className)}>
+      {/* one gateway, many models: hub-and-spokes mark */}
+      <circle cx="12" cy="12" r="3" />
+      <circle cx="12" cy="3.5" r="1.5" />
+      <circle cx="19.5" cy="8" r="1.5" />
+      <circle cx="19.5" cy="16" r="1.5" />
+      <circle cx="12" cy="20.5" r="1.5" />
+      <circle cx="4.5" cy="16" r="1.5" />
+      <circle cx="4.5" cy="8" r="1.5" />
+      <path d="M12 9V5m2.6 4.5 3.6-2.1m-3.6 7.1 3.6 2.1M12 15v4m-2.6-5.5-3.6 2.1m3.6-7.1L5.8 6.5" />
+    </svg>
+  )
+}

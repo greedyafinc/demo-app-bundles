@@ -9,6 +9,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { LlmModelConfig, LlmProvider } from "@x/shared/dist/models.js";
 import z from "zod";
 import { getGatewayProvider } from "./gateway.js";
+import { unifiedApiBase, unifiedFetch } from "../unified/auth.js";
 
 export const Provider = LlmProvider;
 export const ModelConfig = LlmModelConfig;
@@ -66,6 +67,18 @@ export function createProvider(config: z.infer<typeof Provider>): ProviderV2 {
             }) as unknown as ProviderV2;
         case "rowboat":
             return getGatewayProvider();
+        case "unified":
+            // UnifiedAI gateway (unified-api). OpenAI-compatible surface; auth
+            // is per-request via the SDK-managed OAuth session (keychain →
+            // desktop handoff → browser PKCE), injected by unifiedFetch — the
+            // same fetch-level pattern as the rowboat flavor's authedFetch.
+            return createOpenAICompatible({
+                name: "unified",
+                apiKey: "managed-by-unifiedai",
+                baseURL: unifiedApiBase(),
+                headers,
+                fetch: unifiedFetch,
+            });
         default:
             throw new Error(`Unsupported provider flavor: ${config.flavor}`);
     }

@@ -24,7 +24,11 @@ await esbuild.build({
   platform: 'node',
   target: 'node20',
   outfile: './.package/dist/main.cjs',
-  external: ['electron'],  // Provided by Electron runtime
+  // @napi-rs/keyring is @unifiedai/sdk's LAZY default keychain (native .node
+  // module esbuild can't bundle). We inject a file-backed KeychainAdapter so
+  // it is never actually imported at runtime — external just keeps esbuild
+  // from trying to resolve the dynamic import at build time.
+  external: ['electron', '@napi-rs/keyring'],
   // Use CommonJS format - many dependencies use require() which doesn't work
   // well with esbuild's ESM shim. CJS handles dynamic requires natively.
   format: 'cjs',

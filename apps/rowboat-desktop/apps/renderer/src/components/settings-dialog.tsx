@@ -291,7 +291,7 @@ function AppearanceSettings() {
 
 // --- Model Settings UI ---
 
-type LlmProviderFlavor = "openai" | "anthropic" | "google" | "openrouter" | "aigateway" | "ollama" | "openai-compatible"
+type LlmProviderFlavor = "unified" | "openai" | "anthropic" | "google" | "openrouter" | "aigateway" | "ollama" | "openai-compatible"
 
 interface LlmModelOption {
   id: string
@@ -300,6 +300,7 @@ interface LlmModelOption {
 }
 
 const primaryProviders: Array<{ id: LlmProviderFlavor; name: string; description: string }> = [
+  { id: "unified", name: "UnifiedAI", description: "All models, one subscription" },
   { id: "openai", name: "OpenAI", description: "GPT models" },
   { id: "anthropic", name: "Anthropic", description: "Claude models" },
   { id: "google", name: "Gemini", description: "Google AI Studio" },
@@ -336,6 +337,7 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [provider, setProvider] = useState<LlmProviderFlavor>("openai")
   const [defaultProvider, setDefaultProvider] = useState<LlmProviderFlavor | null>(null)
   const [providerConfigs, setProviderConfigs] = useState<Record<LlmProviderFlavor, ProviderModelConfig>>({
+    unified: { apiKey: "", baseURL: "", models: [""], knowledgeGraphModel: "", meetingNotesModel: "", liveNoteAgentModel: "", autoPermissionDecisionModel: "" },
     openai: { apiKey: "", baseURL: "", models: [""], knowledgeGraphModel: "", meetingNotesModel: "", liveNoteAgentModel: "", autoPermissionDecisionModel: "" },
     anthropic: { apiKey: "", baseURL: "", models: [""], knowledgeGraphModel: "", meetingNotesModel: "", liveNoteAgentModel: "", autoPermissionDecisionModel: "" },
     google: { apiKey: "", baseURL: "", models: [""], knowledgeGraphModel: "", meetingNotesModel: "", liveNoteAgentModel: "", autoPermissionDecisionModel: "" },
@@ -502,6 +504,49 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
 
     loadModels()
   }, [dialogOpen])
+
+  // UnifiedAI session (the `unified` flavor is a sign-in, not an API key);
+  // when signed in, its catalog comes from the gateway, not models.dev.
+  const [unifiedSignedIn, setUnifiedSignedIn] = useState(false)
+  const [unifiedConnecting, setUnifiedConnecting] = useState(false)
+
+  const loadUnifiedModels = useCallback(async () => {
+    const result = await window.ipc.invoke('unified:models', null)
+    const models = (result.data || [])
+      .filter((m) => !m.type || m.type === 'text')
+      .map((m) => ({ id: m.id, name: m.name }))
+    setModelsCatalog(prev => ({ ...prev, unified: models }))
+    setProviderConfigs(prev => {
+      if (prev.unified.models[0]?.trim()) return prev
+      const preferred = models.some(m => m.id === 'gpt-5.4') ? 'gpt-5.4' : (models[0]?.id || '')
+      return { ...prev, unified: { ...prev.unified, models: [preferred] } }
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!dialogOpen) return
+    window.ipc.invoke('unified:status', null)
+      .then((status) => {
+        setUnifiedSignedIn(Boolean(status?.signedIn))
+        if (status?.signedIn) return loadUnifiedModels()
+      })
+      .catch(() => { /* unavailable — the panel shows sign-in */ })
+  }, [dialogOpen, loadUnifiedModels])
+
+  const handleUnifiedSignIn = useCallback(async () => {
+    setUnifiedConnecting(true)
+    try {
+      await window.ipc.invoke('unified:signIn', null)
+      setUnifiedSignedIn(true)
+      await loadUnifiedModels()
+    } catch (error) {
+      toast.error('UnifiedAI sign-in failed', {
+        description: error instanceof Error ? error.message : 'Could not reach the UnifiedAI gateway',
+      })
+    } finally {
+      setUnifiedConnecting(false)
+    }
+  }, [loadUnifiedModels])
 
   // Set default models from catalog when catalog loads
   useEffect(() => {
@@ -708,6 +753,22 @@ function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           </button>
         )}
       </div>
+
+      {/* UnifiedAI sign-in (no API key; models come from the gateway catalog) */}
+      {provider === "unified" && !unifiedSignedIn && (
+        <div className="rounded-md border border-primary/20 bg-primary/5 p-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Sign in with your UnifiedAI account to load the model catalog — no API key needed.
+          </p>
+          <Button size="sm" onClick={handleUnifiedSignIn} disabled={unifiedConnecting} className="shrink-0">
+            {unifiedConnecting ? (
+              <><Loader2 className="size-4 animate-spin mr-2" />Waiting...</>
+            ) : (
+              "Sign in with UnifiedAI"
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Model selection - side by side */}
       <div className="grid grid-cols-2 gap-3">

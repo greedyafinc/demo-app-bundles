@@ -12,7 +12,7 @@ export type Step = 0 | 1 | 2 | 3
 
 export type OnboardingPath = 'rowboat' | 'byok' | null
 
-export type LlmProviderFlavor = "openai" | "anthropic" | "google" | "openrouter" | "aigateway" | "ollama" | "openai-compatible"
+export type LlmProviderFlavor = "unified" | "openai" | "anthropic" | "google" | "openrouter" | "aigateway" | "ollama" | "openai-compatible"
 
 export interface LlmModelOption {
   id: string
@@ -30,6 +30,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
   const [modelsLoading, setModelsLoading] = useState(false)
   const [modelsError, setModelsError] = useState<string | null>(null)
   const [providerConfigs, setProviderConfigs] = useState<Record<LlmProviderFlavor, { apiKey: string; baseURL: string; model: string; knowledgeGraphModel: string; meetingNotesModel: string; liveNoteAgentModel: string }>>({
+    unified: { apiKey: "", baseURL: "", model: "", knowledgeGraphModel: "", meetingNotesModel: "", liveNoteAgentModel: "" },
     openai: { apiKey: "", baseURL: "", model: "", knowledgeGraphModel: "", meetingNotesModel: "", liveNoteAgentModel: "" },
     anthropic: { apiKey: "", baseURL: "", model: "", knowledgeGraphModel: "", meetingNotesModel: "", liveNoteAgentModel: "" },
     google: { apiKey: "", baseURL: "", model: "", knowledgeGraphModel: "", meetingNotesModel: "", liveNoteAgentModel: "" },
@@ -101,6 +102,49 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     activeConfig.model.trim().length > 0 &&
     (!requiresApiKey || activeConfig.apiKey.trim().length > 0) &&
     (!requiresBaseURL || activeConfig.baseURL.trim().length > 0)
+
+  // UnifiedAI session (the `unified` flavor needs a sign-in, not an API key)
+  const [unifiedSignedIn, setUnifiedSignedIn] = useState(false)
+  const [unifiedConnecting, setUnifiedConnecting] = useState(false)
+
+  const loadUnifiedModels = useCallback(async () => {
+    const result = await window.ipc.invoke('unified:models', null)
+    const models = (result.data || [])
+      .filter((m) => !m.type || m.type === 'text')
+      .map((m) => ({ id: m.id, name: m.name }))
+    setModelsCatalog(prev => ({ ...prev, unified: models }))
+    setProviderConfigs(prev => {
+      if (prev.unified.model) return prev
+      const preferred = models.some(m => m.id === 'gpt-5.4') ? 'gpt-5.4' : (models[0]?.id || '')
+      return { ...prev, unified: { ...prev.unified, model: preferred } }
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    window.ipc.invoke('unified:status', null)
+      .then((status) => {
+        setUnifiedSignedIn(Boolean(status?.signedIn))
+        if (status?.signedIn) return loadUnifiedModels()
+      })
+      .catch(() => { /* not available — picker shows sign-in */ })
+  }, [open, loadUnifiedModels])
+
+  const handleUnifiedSignIn = useCallback(async () => {
+    setUnifiedConnecting(true)
+    try {
+      await window.ipc.invoke('unified:signIn', null)
+      setUnifiedSignedIn(true)
+      await loadUnifiedModels()
+    } catch (error) {
+      console.error('UnifiedAI sign-in failed:', error)
+      toast.error('UnifiedAI sign-in failed', {
+        description: error instanceof Error ? error.message : 'Could not reach the UnifiedAI gateway',
+      })
+    } finally {
+      setUnifiedConnecting(false)
+    }
+  }, [loadUnifiedModels])
 
   // Track connected providers for the completion step
   const connectedProviders = Object.entries(providerStates)
@@ -636,6 +680,11 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     setShowMoreProviders,
     updateProviderConfig,
     handleTestAndSaveLlmConfig,
+
+    // UnifiedAI session
+    unifiedSignedIn,
+    unifiedConnecting,
+    handleUnifiedSignIn,
 
     // OAuth state
     providers,

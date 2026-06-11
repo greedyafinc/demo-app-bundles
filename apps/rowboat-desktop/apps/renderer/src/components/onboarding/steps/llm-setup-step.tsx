@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils"
 import {
   OpenAIIcon,
+  UnifiedAIIcon,
   AnthropicIcon,
   GoogleIcon,
   OllamaIcon,
@@ -26,6 +27,7 @@ interface LlmSetupStepProps {
 }
 
 const primaryProviders: Array<{ id: LlmProviderFlavor; name: string; description: string; color: string; icon: React.ReactNode }> = [
+  { id: "unified", name: "UnifiedAI", description: "All models, one subscription", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", icon: <UnifiedAIIcon /> },
   { id: "openai", name: "OpenAI", description: "GPT models", color: "bg-green-500/10 text-green-600 dark:text-green-400", icon: <OpenAIIcon /> },
   { id: "anthropic", name: "Anthropic", description: "Claude models", color: "bg-orange-500/10 text-orange-600 dark:text-orange-400", icon: <AnthropicIcon /> },
   { id: "google", name: "Gemini", description: "Google AI Studio", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400", icon: <GoogleIcon /> },
@@ -45,6 +47,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
     showBaseURL, isLocalProvider, canTest, showMoreProviders, setShowMoreProviders,
     updateProviderConfig, handleTestAndSaveLlmConfig, handleBack,
     upsellDismissed, setUpsellDismissed, handleSwitchToRowboat,
+    unifiedSignedIn, unifiedConnecting, handleUnifiedSignIn,
   } = state
 
   const isMoreProvider = moreProviders.some(p => p.id === llmProvider)
@@ -145,7 +148,24 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
       {/* Separator */}
       <div className="h-px bg-border my-4" />
 
-      {/* Model configuration */}
+      {/* UnifiedAI: a sign-in, not an API key. Until a session exists the
+          model pickers below have no catalog, so show the connect panel. */}
+      {llmProvider === "unified" && !unifiedSignedIn ? (
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-6 flex flex-col items-center gap-3 text-center">
+          <p className="text-sm text-muted-foreground max-w-md">
+            Sign in with your UnifiedAI account to use every model in the catalog
+            on one subscription — no API keys. Your browser will open to approve
+            access.
+          </p>
+          <Button onClick={handleUnifiedSignIn} disabled={unifiedConnecting} className="min-w-[200px]">
+            {unifiedConnecting ? (
+              <><Loader2 className="size-4 animate-spin mr-2" />Waiting for sign-in...</>
+            ) : (
+              "Sign in with UnifiedAI"
+            )}
+          </Button>
+        </div>
+      ) : (
       <div className="space-y-4">
         <h3 className="text-sm font-semibold">Model Configuration</h3>
 
@@ -328,6 +348,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
           </div>
         )}
       </div>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-6 pt-4 border-t">

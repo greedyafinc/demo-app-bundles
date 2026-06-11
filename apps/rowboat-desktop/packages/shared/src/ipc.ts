@@ -333,6 +333,39 @@ const ipcSchemas = {
       lastUpdated: z.string().optional(),
     }),
   },
+  'unified:status': {
+    req: z.null(),
+    res: z.object({
+      signedIn: z.boolean(),
+      gateway: z.string(),
+    }),
+  },
+  'unified:signIn': {
+    req: z.null(),
+    res: z.object({
+      signedIn: z.boolean(),
+    }),
+  },
+  'unified:signOut': {
+    req: z.null(),
+    res: z.object({
+      success: z.boolean(),
+    }),
+  },
+  'unified:models': {
+    req: z.null(),
+    res: z.object({
+      object: z.literal("list"),
+      data: z.array(z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        type: z.string().optional(),
+        logo: z.string().nullable().optional(),
+        owned_by: z.string().optional(),
+        model_author: z.object({ name: z.string().optional() }).nullable().optional(),
+      }).loose()),
+    }),
+  },
   'models:test': {
     req: LlmModelConfig,
     res: z.object({
