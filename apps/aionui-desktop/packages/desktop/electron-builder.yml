@@ -1,4 +1,4 @@
-appId: com.aionui.app
+appId: com.greedyafinc.aionui-desktop  # marketplace identity — avoid LaunchServices collision with stock AionUi
 productName: AionUi
 executableName: AionUi
 copyright: Copyright © 2024 AionUi
