@@ -54,8 +54,15 @@ export function ModelSelect({ apiBase }: { apiBase: string }) {
       } catch {
         /* server not up yet — the next apiBase change retries */
       }
-      // Gateway catalog (only inside the UnifiedApp desktop host).
+      // Gateway catalog (only inside the UnifiedApp desktop host). Probe the
+      // always-200 status route first so a standalone run doesn't log a red
+      // 503 to the console on every load.
       try {
+        const status = await fetch(new URL("/unified/status", apiBase), { signal: abort.signal });
+        if (!status.ok || !(await status.json())?.configured) {
+          setUnifiedAvailable(false);
+          return;
+        }
         const res = await fetch(new URL("/unified/models", apiBase), { signal: abort.signal });
         if (!res.ok) {
           setUnifiedAvailable(false);

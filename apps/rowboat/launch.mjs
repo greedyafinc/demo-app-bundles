@@ -112,6 +112,19 @@ if (isUnifiedConfigured()) {
     log("no broker env (running outside UnifiedApp?); model providers left to user config");
 }
 
+// Always make sure mcp.json exists: upstream creates it lazily on first MCP
+// use, but the dashboard's Config sidebar only lists files that exist — with
+// no mcp.json there is no entry point to configure MCP servers (the way
+// workspace tools like a Gmail MCP get wired in).
+{
+    const mcpPath = path.join(workDir, "config", "mcp.json");
+    if (!existsSync(mcpPath)) {
+        mkdirSync(path.dirname(mcpPath), { recursive: true });
+        writeFileSync(mcpPath, JSON.stringify({ mcpServers: {} }, null, 2));
+        log(`seeded empty ${mcpPath}`);
+    }
+}
+
 // ── 3. Broker token diagnostics + host .token handoff ───────────────────────
 if (isUnifiedConfigured()) {
     try {
