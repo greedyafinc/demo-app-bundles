@@ -210,6 +210,7 @@ export async function modelConfig() {
             ollama: "",
             "openai-compatible": "",
             openrouter: "",
+            unified: "",
         };
         const defaultBaseUrls: Record<z.infer<typeof Flavor>, string> = {
             "rowboat [free]": "",
@@ -220,6 +221,7 @@ export async function modelConfig() {
             ollama: "http://localhost:11434",
             "openai-compatible": "http://localhost:8080/v1",
             openrouter: "https://openrouter.ai/api/v1",
+            unified: "http://localhost:3141/api/v1",
         };
         const defaultModels: Record<z.infer<typeof Flavor>, string> = {
             "rowboat [free]": "google/gemini-3-pro-preview",
@@ -230,6 +232,7 @@ export async function modelConfig() {
             ollama: "llama3.1",
             "openai-compatible": "openai/gpt-5.1",
             openrouter: "openrouter/auto",
+            unified: "gpt-5.4",
         };
 
         const currentProvider = config?.defaults?.provider;

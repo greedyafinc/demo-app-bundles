@@ -26,7 +26,15 @@ export class FSMcpConfigRepo implements IMcpConfigRepo {
     }
 
     async getConfig(): Promise<z.infer<typeof McpServerConfig>> {
-        const config = await fs.readFile(this.configPath, "utf8");
+        let config: string;
+        try {
+            config = await fs.readFile(this.configPath, "utf8");
+        } catch {
+            // The constructor's ensureDefaultConfig() is fire-and-forget, so a
+            // read issued right after boot can race the default-file write.
+            await this.ensureDefaultConfig();
+            return { mcpServers: {} };
+        }
         return McpServerConfig.parse(JSON.parse(config));
     }
 

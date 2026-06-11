@@ -39,7 +39,15 @@ export class FSModelConfigRepo implements IModelConfigRepo {
     }
 
     async getConfig(): Promise<z.infer<typeof ModelConfig>> {
-        const config = await fs.readFile(this.configPath, "utf8");
+        let config: string;
+        try {
+            config = await fs.readFile(this.configPath, "utf8");
+        } catch {
+            // The constructor's ensureDefaultConfig() is fire-and-forget, so a
+            // read issued right after boot can race the default-file write.
+            await this.ensureDefaultConfig();
+            return structuredClone(defaultConfig);
+        }
         return ModelConfig.parse(JSON.parse(config));
     }
 
