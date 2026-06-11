@@ -363,7 +363,7 @@ const ipcSchemas = {
         logo: z.string().nullable().optional(),
         owned_by: z.string().optional(),
         model_author: z.object({ name: z.string().optional() }).nullable().optional(),
-      }).loose()),
+      })),
     }),
   },
   'models:test': {

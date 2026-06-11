@@ -628,7 +628,19 @@ export function setupIpcHandlers() {
       return { success: true };
     },
     'unified:models': async () => {
-      return await listUnifiedModels();
+      const catalog = await listUnifiedModels();
+      // Re-shape to the IPC schema (the SDK's Model type carries extra fields).
+      return {
+        object: 'list' as const,
+        data: catalog.data.map((m) => ({
+          id: m.id,
+          name: m.name,
+          type: m.type,
+          logo: m.logo,
+          owned_by: m.owned_by,
+          model_author: m.model_author ? { name: m.model_author.name } : null,
+        })),
+      };
     },
     'oauth:getState': async () => {
       const repo = container.resolve<IOAuthRepo>('oauthRepo');

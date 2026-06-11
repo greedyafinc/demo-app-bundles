@@ -280,12 +280,18 @@ app.whenReady().then(async () => {
   // serves workspace files via app://workspace/<rel-path> for media previews.
   registerAppProtocol();
 
-  // Initialize auto-updater (only in production)
-  if (app.isPackaged) {
+  // Initialize auto-updater (only in production, and only when explicitly
+  // enabled). This build carries the UnifiedAI provider integration; pulling
+  // updates from upstream rowboatlabs/rowboat would silently replace it with
+  // the stock app (the updater downloaded upstream 0.5.6 within seconds in
+  // testing). Distribution channels that want auto-update must point
+  // ROWBOAT_UPDATE_REPO at a repo that publishes THIS build's artifacts.
+  const updateRepo = process.env.ROWBOAT_UPDATE_REPO;
+  if (app.isPackaged && updateRepo) {
     updateElectronApp({
       updateSource: {
         type: UpdateSourceType.ElectronPublicUpdateService,
-        repo: "rowboatlabs/rowboat",
+        repo: updateRepo,
       },
       notifyUser: true, // Shows native dialog when update is available
     });
