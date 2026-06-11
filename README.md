@@ -23,7 +23,7 @@ All apps are `kind: node-service` and currently ship `darwin-arm64`.
 | Hermes Web UI | [`apps/hermes`](apps/hermes) | [nesquena/hermes-webui](https://github.com/nesquena/hermes-webui) | _pending_ (`hermes-v0.51.247`) |
 | OpenDesign | [`apps/open-design`](apps/open-design) | [nexu-io/open-design](https://github.com/nexu-io/open-design) | `opendesign-v1.1.0` |
 | OpenClaw | [`apps/openclaw`](apps/openclaw) | [openclaw/openclaw](https://github.com/openclaw/openclaw) | `openclaw-v1.0.0` |
-| Rowboat | [`apps/rowboat`](apps/rowboat) | [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat) | _pending_ (`rowboat-v0.16.0`) |
+| Rowboat (in-shell, unregistered) | [`apps/rowboat`](apps/rowboat) | [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat) | — (superseded by Rowboat Desktop) |
 | Rowboat Desktop (.app) | [`apps/rowboat-desktop`](apps/rowboat-desktop) | [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat) `apps/x` | _pending_ (`rowboat-desktop-v0.1.0`) |
 
 See each app's own `README.md` for its pinned upstream commit, exact build command, build dependencies,

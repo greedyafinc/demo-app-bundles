@@ -1,4 +1,10 @@
-# Rowboat — UnifiedApp marketplace bundle
+# Rowboat — UnifiedApp marketplace bundle (not currently registered)
+
+> **Status:** superseded in the marketplace by
+> [`apps/rowboat-desktop`](../rowboat-desktop) (the full Rowboat Electron app
+> as a solo `.app`). This in-shell `node-service` bundle still builds and works
+> but has no `apps.js` entry; re-register it if an embedded workspace variant
+> is wanted again.
 
 [RowboatX](https://github.com/rowboatlabs/rowboat) (Apache-2.0), the open-source
 agent workspace from Rowboat Labs, packaged as a UnifiedApp `node-service`
