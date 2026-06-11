@@ -21,6 +21,7 @@ import { IBus } from './application/lib/bus.js';
 import { cors } from 'hono/cors';
 import { WorkDir } from './config/config.js';
 import { getUnifiedSdk } from './unified/sdk.js';
+import { isUnifiedConfigured, unifiedApiBase } from './unified/auth.js';
 
 // Resolve a user-supplied file name inside a workspace dir, rejecting any
 // path that escapes it (the ?file= params are attacker-controllable inputs).
@@ -393,6 +394,18 @@ const routes = new Hono()
                 return c.json({ error: "config not found" }, 404);
             }
         }
+    )
+    .get(
+        '/unified/status',
+        describeRoute({
+            summary: 'UnifiedAI connection status',
+            description: 'Whether this service runs inside the UnifiedApp desktop host (loopback broker present) and which gateway it targets.',
+        }),
+        (c) => c.json({
+            configured: isUnifiedConfigured(),
+            slug: process.env.UNIFIED_APP_SLUG ?? null,
+            gateway: unifiedApiBase(),
+        })
     )
     .get(
         '/unified/models',

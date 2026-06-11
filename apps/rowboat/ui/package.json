@@ -27,6 +27,7 @@
     "@tiptap/pm": "^3.13.0",
     "@tiptap/react": "^3.13.0",
     "@tiptap/starter-kit": "^3.13.0",
+    "@unifiedai/sdk": "github:greedyafinc/uni-sdk",
     "@xyflow/react": "^12.10.0",
     "ai": "^5.0.108",
     "class-variance-authority": "^0.7.1",

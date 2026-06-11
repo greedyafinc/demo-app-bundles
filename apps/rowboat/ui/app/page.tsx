@@ -57,6 +57,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { JsonEditor } from "@/components/json-editor";
+import { ModelSelect } from "@/components/model-select";
 import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
 import { MarkdownViewer } from "@/components/markdown-viewer";
 
@@ -243,6 +244,7 @@ function PageBody() {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <ModelSelect apiBase={apiBase} />
         </PromptInputTools>
         <PromptInputSubmit
           disabled={!(text.trim() || status) || status === "streaming"}

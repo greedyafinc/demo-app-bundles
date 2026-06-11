@@ -108,7 +108,10 @@ stale (no self-heal pass needed, unlike Hermes's seeded `base_url`).
 | `cli/src/config/config.ts` | `ROWBOAT_HOME` env seam for `WorkDir`; ensure `runs/` exists (POST `/runs/new` appends before the runtime ever mkdirs it). |
 | `cli/src/server.ts` | Completed the REST surface its own TUI client (`src/tui/api.ts`) and the dashboard already call but HEAD doesn't serve: `/health`, `GET /runs`, `GET /runs/:id`, `POST /runs/new`, `/agents` list/get/put, `/mcp` get/upsert/delete, `/models` get + providers upsert/delete + default, `/config/:name`; dashboard-origin routes (`/api/stream` SSE alias, `/api/rowboat/{summary,agent,config,run}` with path-traversal guards); `GET /unified/models`; static `ui/out` serving (`ROWBOAT_UI_DIR`); `HOST` binding. |
 | `cli/package.json` | `@unifiedai/sdk` git dependency. |
-| `ui/app/page.tsx` + `ui/global.d.ts` | `apiBase` falls back to `window.location.origin` when no Electron-style `window.config` is injected (the bundle serves UI + API same-origin). |
+| `ui/app/page.tsx` + `ui/global.d.ts` | `apiBase` falls back to `window.location.origin` when no Electron-style `window.config` is injected (the bundle serves UI + API same-origin); composer renders the `ModelSelect` picker next to the agent selector. |
+| `ui/components/model-select.tsx` (new) | Gateway model picker: options from `GET /unified/models` (the UnifiedAI catalog), each with its author's brand logo (`model.logo` falling back to `getModelLogo` from `@unifiedai/sdk`); selection persists via `PUT /models/providers/unified` + `PUT /models/default`. Visible-but-disabled outside the desktop host. |
+| `ui/components/app-sidebar.tsx` | De-mocked the shadcn template data: "Chat History" now lists real runs (prettified timestamps → read-only run view) instead of hardcoded fake chats; the dead `Scheduled`/`Applets` placeholder groups are gone; the fake `user@example.com` footer is replaced by a live gateway-connection indicator (`GET /unified/status`), which also kills the `/avatars/user.jpg` 404. |
+| `ui/package.json` | `@unifiedai/sdk` git dependency (logo data-URIs in the picker). |
 
 Everything else is byte-identical to upstream `e2178c14` (see
 [`.upstream-sha`](.upstream-sha)).

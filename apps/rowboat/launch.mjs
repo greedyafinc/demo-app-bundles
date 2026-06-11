@@ -77,19 +77,24 @@ function seedModelsConfig() {
     mkdirSync(configDir, { recursive: true });
 
     if (existsSync(modelsPath)) {
-        // Replace ONLY the untouched upstream default (provider "openai", no
-        // key) left behind by a standalone run — chat would be dead anyway.
-        // Anything else is user-owned config: respect it.
+        // Replace ONLY configs that cannot work anyway; anything the user has
+        // meaningfully edited is respected:
+        //   - unparseable JSON (e.g. torn by interrupted concurrent writes),
+        //   - the untouched upstream default (provider "openai", no key) left
+        //     behind by a standalone run,
+        //   - a unified-provider config whose default model is empty.
         try {
             const current = JSON.parse(readFileSync(modelsPath, "utf8"));
             const isUpstreamDefault =
                 Object.keys(current.providers ?? {}).join(",") === "openai" &&
                 !current.providers.openai?.apiKey &&
                 current.defaults?.provider === "openai";
-            if (!isUpstreamDefault) return;
-            log("replacing untouched default models.json with the unified provider seed");
+            const isBrokenUnified =
+                current.defaults?.provider === "unified" && !current.defaults?.model;
+            if (!isUpstreamDefault && !isBrokenUnified) return;
+            log("replacing dead models.json (untouched default / empty unified model) with the unified provider seed");
         } catch {
-            return; // unreadable/invalid — leave it to the app to complain
+            log("models.json is unreadable JSON — re-seeding it (previous content was unusable)");
         }
     }
 

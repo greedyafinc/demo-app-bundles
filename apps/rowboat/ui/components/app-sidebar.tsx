@@ -1,11 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { ChevronRight, Clock3, FileText, Folder, Play, Plug, Rocket, Users } from "lucide-react"
+import { ChevronRight, FileText, Folder, MessageSquare, Play, Plug, Users } from "lucide-react"
 
-import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
-import { NavProjects } from "@/components/nav-projects"
 import {
   Sidebar,
   SidebarContent,
@@ -21,70 +19,13 @@ import {
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-// This is sample data.
-const data = {
-  user: {
-    name: "user",
-    email: "user@example.com",
-    avatar: "/avatars/user.jpg",
+const teams = [
+  {
+    name: "RowboatX",
+    logo: Users,
+    plan: "Workspace",
   },
-  teams: [
-    {
-      name: "RowboatX",
-      logo: Users,
-      plan: "Workspace",
-    },
-  ],
-  chatHistory: [
-    { name: "Building a React Dashboard", url: "#" },
-    { name: "API Integration Best Practices", url: "#" },
-    { name: "TypeScript Migration Guide", url: "#" },
-    { name: "Database Optimization Tips", url: "#" },
-    { name: "Docker Container Setup", url: "#" },
-    { name: "GraphQL vs REST API", url: "#" },
-  ],
-  navMain: [
-    {
-      title: "Scheduled",
-      url: "#",
-      icon: Clock3,
-      isActive: false,
-      items: [
-        {
-          title: "View Schedule",
-          url: "#",
-        },
-        {
-          title: "Create Schedule",
-          url: "#",
-        },
-        {
-          title: "Recurring Tasks",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Applets",
-      url: "#",
-      icon: Rocket,
-      items: [
-        {
-          title: "Browse Applets",
-          url: "#",
-        },
-        {
-          title: "Create Applet",
-          url: "#",
-        },
-        {
-          title: "My Applets",
-          url: "#",
-        },
-      ],
-    },
-  ],
-}
+]
 
 type RowboatSummary = {
   agents: string[]
@@ -95,6 +36,29 @@ type RowboatSummary = {
 type ResourceKind = "agent" | "config" | "run"
 
 type SidebarSelect = (item: { kind: ResourceKind; name: string }) => void
+
+type UnifiedStatus = {
+  configured: boolean
+  slug: string | null
+  gateway: string
+}
+
+// Run logs are named `<iso-ish timestamp>-<seq>.jsonl`
+// (e.g. 2026-06-11T16-37-31Z-0074374-000.jsonl); render them as friendly
+// chat-history labels.
+function runLabel(fileName: string): string {
+  const m = fileName.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})Z/)
+  if (!m) return fileName.replace(/\.jsonl$/, "")
+  const [, y, mo, d, h, mi] = m
+  const date = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi))
+  if (Number.isNaN(date.getTime())) return fileName.replace(/\.jsonl$/, "")
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   onSelectResource?: SidebarSelect
@@ -108,6 +72,7 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
     runs: [],
   })
   const [loading, setLoading] = React.useState(true)
+  const [unified, setUnified] = React.useState<UnifiedStatus | null>(null)
 
   React.useEffect(() => {
     const load = async () => {
@@ -129,6 +94,19 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
     load()
   }, [])
 
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/unified/status")
+        if (!res.ok) return
+        setUnified(await res.json())
+      } catch {
+        /* served outside the rowboatx server (e.g. next dev) — leave null */
+      }
+    }
+    load()
+  }, [])
+
   // Limit runs shown and provide "View more" affordance similar to chat history.
   const runsLimit = 8
   const visibleRuns = summary.runs.slice(0, runsLimit)
@@ -138,20 +116,10 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
     onSelectResource?.({ kind, name })
   }
 
-  const navInitial = React.useMemo(
-    () =>
-      data.navMain.reduce<Record<string, boolean>>((acc, item) => {
-        acc[item.title] = false
-        return acc
-      }, {}),
-    []
-  )
-
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({
     agents: false,
     config: false,
     runs: false,
-    ...navInitial,
   })
 
   const isCollapsed = sidebarState === "collapsed"
@@ -174,7 +142,7 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -299,48 +267,41 @@ export function AppSidebar({ onSelectResource, ...props }: AppSidebarProps) {
                 </SidebarMenu>
               </CollapsibleContent>
             </Collapsible>
-
-            {data.navMain.map((item) => (
-              <Collapsible
-                key={item.title}
-              className="group/collapsible"
-              open={openGroups[item.title]}
-              onOpenChange={(open) => handleOpenChange(item.title, open)}
-            >
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="h-9">
-                    {item.title === "Scheduled" ? (
-                      <Clock3 className="mr-2 h-4 w-4" />
-                    ) : item.title === "Applets" ? (
-                      <Rocket className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Folder className="mr-2 h-4 w-4" />
-                    )}
-                    <span className="truncate">{item.title}</span>
-                    <ChevronRight className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent asChild>
-                  <SidebarMenu className="pl-2">
-                    {item.items?.map((sub) => (
-                      <SidebarMenuItem key={sub.title}>
-                        <SidebarMenuButton className="pl-8 h-8">
-                          <span className="truncate">{sub.title}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
-            ))}
           </SidebarMenu>
         </SidebarGroup>
-        <NavProjects projects={data.chatHistory} />
+
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel>Chat History</SidebarGroupLabel>
+          <SidebarMenu>
+            {loading ? (
+              <div className="px-3 py-2 text-xs text-muted-foreground">Loading…</div>
+            ) : summary.runs.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-muted-foreground">No chats yet</div>
+            ) : (
+              visibleRuns.map((name) => (
+                <SidebarMenuItem key={name}>
+                  <SidebarMenuButton
+                    className="h-8"
+                    onClick={() => handleSelect("run", name)}
+                  >
+                    <MessageSquare className="mr-2 h-3.5 w-3.5" />
+                    <span className="truncate">{runLabel(name)}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))
+            )}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:justify-center">
+          <span
+            className={`h-2 w-2 shrink-0 rounded-full ${unified?.configured ? "bg-emerald-500" : "bg-zinc-400"}`}
+          />
+          <span className="truncate group-data-[collapsible=icon]:hidden">
+            {unified?.configured ? "Unified gateway · connected" : "Standalone · no gateway"}
+          </span>
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
