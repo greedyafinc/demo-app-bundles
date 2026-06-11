@@ -28,6 +28,11 @@ import { WorkDir } from "../config/config.js";
 // Override with UNIFIED_CLIENT_ID; the SDK also honors UNIFIEDAI_CLIENT_ID.
 const DEFAULT_CLIENT_ID = "rowboat-desktop";
 
+// The web client origin hosting the /oauth/authorize consent page. In the
+// local dev stack that's the Quasar dev server (same default as uni-sdk's
+// demo-app); UNIFIEDAI_WEB_BASE overrides (same env the demo-app uses).
+const DEFAULT_DEV_WEB_BASE = "http://localhost:9000";
+
 const TOKENS_PATH = path.join(WorkDir, "config", "unified-tokens.json");
 
 /** Gateway host (no trailing slash, no /api/v1). UNIFIED_API_URL overrides. */
@@ -91,12 +96,31 @@ class RowboatUnifiedAI extends UnifiedAI {
 
 let sdk: RowboatUnifiedAI | null = null;
 
+/** True when the configured gateway is the local dev stack (loopback). */
+function isLocalGateway(): boolean {
+    return /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(unifiedApiHost());
+}
+
 export function getUnifiedSdk(): RowboatUnifiedAI {
     if (!sdk) {
+        // The SDK's baked-in OAuth endpoints point at production
+        // (web.unifiedai.app / api.unifiedai.app). When the gateway is the
+        // local dev stack — the default, and a Finder-launched .app gets no
+        // env vars — derive the dev endpoints instead: the authorize consent
+        // page lives on the web client (:9000) and the token endpoint on
+        // unified-api itself. Explicit UNIFIEDAI_* env always wins.
+        const webBase = (process.env.UNIFIEDAI_WEB_BASE || DEFAULT_DEV_WEB_BASE).replace(/\/+$/, "");
+        const local = isLocalGateway();
         sdk = new RowboatUnifiedAI({
             apiUrl: unifiedApiHost(),
             appId: process.env.UNIFIED_CLIENT_ID || DEFAULT_CLIENT_ID,
             keychain: fileKeychain,
+            authorizeUrl:
+                process.env.UNIFIEDAI_AUTHORIZE_URL ||
+                (local ? `${webBase}/oauth/authorize` : undefined),
+            tokenUrl:
+                process.env.UNIFIEDAI_TOKEN_URL ||
+                (local ? `${unifiedApiHost()}/oauth/token` : undefined),
         });
     }
     return sdk;
