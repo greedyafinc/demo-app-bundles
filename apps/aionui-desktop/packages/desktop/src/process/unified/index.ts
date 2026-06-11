@@ -4,5 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export { getUnifiedSdk, isUnifiedSignedIn, signInUnified, signOutUnified, unifiedApiBase, unifiedApiHost } from './auth';
+export {
+  getUnifiedSdk,
+  isUnifiedSignedIn,
+  signInUnified,
+  signOutUnified,
+  unifiedApiBase,
+  unifiedApiHost,
+} from './auth';
 export { getUnifiedProxyConfig, startUnifiedProxy } from './proxy';

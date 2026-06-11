@@ -24,6 +24,15 @@ command -v bun >/dev/null 2>&1 || { echo "error: bun is required on PATH" >&2; e
 echo "==> Installing dependencies"
 bun install
 
+# The @unifiedai/sdk git dependency ships sources only; bun blocks its prepare
+# script (untrusted lifecycle), and the prepare also fails on a clean checkout
+# because tsc needs @types/bun in the consumer context (TS2688). Build it
+# explicitly when dist/ is missing.
+if [[ ! -f node_modules/@unifiedai/sdk/dist/node/index.js ]]; then
+  echo "==> Building @unifiedai/sdk (git dependency)"
+  (cd node_modules/@unifiedai/sdk && bun add -d @types/bun && bun run build)
+fi
+
 echo "==> Regenerating i18n key types"
 bun run i18n:types
 

@@ -564,7 +564,12 @@ const AddPlatformModal = ModalHOC<{
                   {t('settings.unifiedSignedIn')}
                 </span>
               ) : (
-                <Button type='primary' size='small' loading={unifiedSigningIn} onClick={() => void handleUnifiedSignIn()}>
+                <Button
+                  type='primary'
+                  size='small'
+                  loading={unifiedSigningIn}
+                  onClick={() => void handleUnifiedSignIn()}
+                >
                   {unifiedSigningIn ? t('settings.unifiedSigningIn') : t('settings.unifiedSignIn')}
                 </Button>
               )}
