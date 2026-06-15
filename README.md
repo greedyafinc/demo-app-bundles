@@ -16,12 +16,12 @@ This repo plays two roles:
 ## Apps
 
 Most apps are `kind: node-service` and currently ship `darwin-arm64`. The exception is **Peak**, a standalone
-[Tauri 2](https://tauri.app) app (desktop + mobile) authored here rather than vendored from an upstream — see
-[`apps/peak`](apps/peak).
+[Tauri 2](https://tauri.app) desktop + mobile app kept in its own repo and vendored here as a **git submodule**
+at [`apps/peak`](apps/peak) — run `git submodule update --init apps/peak` after cloning.
 
 | App | Dir | Upstream | Latest release |
 |-----|-----|----------|----------------|
-| Peak (Tauri desktop + mobile) | [`apps/peak`](apps/peak) | _original (Claude Design `Peak.dc.html`)_ | _pending_ (`peak-v0.1.0`) |
+| Peak (Tauri desktop + mobile) | [`apps/peak`](apps/peak) _(submodule)_ | [greedyafinc/peak](https://github.com/greedyafinc/peak) | _pending_ (`peak-v0.1.0`) |
 | Vibe-Trading | [`apps/vibe-trading`](apps/vibe-trading) | [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) | `vibe-trading-v0.1.9` |
 | Hermes Web UI | [`apps/hermes`](apps/hermes) | [nesquena/hermes-webui](https://github.com/nesquena/hermes-webui) | _pending_ (`hermes-v0.51.247`) |
 | OpenDesign | [`apps/open-design`](apps/open-design) | [nexu-io/open-design](https://github.com/nexu-io/open-design) | `opendesign-v1.1.0` |

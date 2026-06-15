@@ -1,0 +1,3 @@
+[submodule "apps/peak"]
+	path = apps/peak
+	url = https://github.com/greedyafinc/peak.git
