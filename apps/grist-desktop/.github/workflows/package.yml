@@ -1,0 +1,171 @@
+name: Packaging
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - package
+    tags:
+      - '*'
+env:
+  FORCE_COLOR: 1
+  # This makes the macos-13 packaging work.
+  # I don't know why. Your guess is as good as mine.
+  DEBUG_DMG: true
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-15-intel
+          - ubuntu-22.04
+          - windows-2022
+        host:
+          - x64
+        target:
+          - x64
+        node:
+          - 22
+        include:
+          - os: macos-14
+            host: arm64
+            target: arm64
+            node: 22
+    name: ${{ matrix.os }} (node=${{ matrix.node }}, host=${{ matrix.host }}, target=${{ matrix.target }})
+    steps:
+      - name: Set up bash association
+        if: startsWith(matrix.os, 'windows')
+        run: |
+          ls
+          ls "c:\\"
+          ls "c:\\Program Files"
+          ls "c:\\Program Files/Git"
+          ls "c:\\Program Files/Git/bin"
+          cmd /c assoc .sh=bashscript
+          cmd /c ftype bashscript="%ProgramFiles%\Git\bin\bash.exe" "%1"
+          cmd /c ftype
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Submodule cleanup fix  # See https://github.com/actions/checkout/issues/358
+        run: |
+          git submodule foreach --recursive git clean -ffdx
+          git submodule foreach --recursive git reset --hard
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/cache@v4
+        id: yarn-cache
+        with:
+          path: |
+            node_modules
+            core/node_modules
+          key: ${{ matrix.os }}-${{ matrix.target }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ matrix.target }}-yarn-
+
+      - name: Install dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        # skip optional dependencies because they add msgextract which fails on windows
+        run: yarn install --network-timeout 300000 --ignore-optional
+
+        # by not installing optional dependencies, we miss something
+        # needed on macs
+      - name: Add dmg-license if needed
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          yarn global add dmg-license
+          FORCE_COLOR=0 yarn global bin >> "$GITHUB_PATH"
+          echo "NODE_PATH=$(FORCE_COLOR=0 yarn global dir)/node_modules:$NODE_PATH" >> "$GITHUB_ENV"
+
+      - name: Hooks and crooks
+        run: yarn run setup
+        env:
+          RUN_OS: ${{ matrix.os }}
+          RUN_ARCH: ${{ matrix.target }}
+
+      - name: Build
+        run: yarn run build
+
+      - name: Test
+        run: yarn run test
+
+
+      - name: Prepare Flatpak dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder librsvg2-bin
+          
+          # Create ./dist to prevent it being created by prepare-flatpak and owned by root (due to sudo)
+          mkdir -p ./dist
+          sudo ./scripts/prepare-flatpak.sh
+
+      - name: Package
+        # github endpoints hang up quite a bit, add one retry.
+        run: yarn run electron:ci || yarn run electron:ci
+        env:
+          TARGET_ARCH: ${{ matrix.target }}
+          GITHUB_TOKEN: ${{ github.token }}
+          DEBUG: electron-builder
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+
+      - name: Upload Windows portable build
+        if: startsWith(matrix.os, 'windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable-${{ matrix.target }}
+          path: dist/grist-desktop-*.zip
+          if-no-files-found: "error"
+
+      - name: Upload Windows installer build
+        if: startsWith(matrix.os, 'windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-${{ matrix.target }}
+          path: dist/grist-desktop-*.exe
+          if-no-files-found: "error"
+
+      - name: Upload Linux AppImage build
+        if: startsWith(matrix.os, 'ubuntu')
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.target }}
+          path: dist/grist-desktop-*.AppImage
+          if-no-files-found: "error"
+
+      - name: Upload Linux Flatpak build
+        if: startsWith(matrix.os, 'ubuntu')
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-flatpak-${{ matrix.target }}
+          path: dist/grist-desktop-*.flatpak
+          if-no-files-found: "error"
+
+      - name: Upload macOS build
+        if: startsWith(matrix.os, 'macos')
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.target }}
+          path: dist/grist-desktop-*.dmg
+          if-no-files-found: "error"

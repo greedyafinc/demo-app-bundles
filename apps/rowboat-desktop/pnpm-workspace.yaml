@@ -1,0 +1,18 @@
+packages:
+  - apps/*
+  - packages/*
+
+catalog:
+  vitest: 4.1.7
+
+onlyBuiltDependencies:
+  - '@unifiedai/sdk'
+  - core-js
+  - electron
+  - electron-winstaller
+  - esbuild
+  - fs-xattr
+  - macos-alias
+  - protobufjs
+patchedDependencies:
+  '@openai/codex@0.128.0': patches/@openai__codex@0.128.0.patch
