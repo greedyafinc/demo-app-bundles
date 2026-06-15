@@ -1,0 +1,12 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="228" fill="#0a0b0d"/>
+  <rect x="2" y="2" width="1020" height="1020" rx="226" stroke="#ffffff" stroke-opacity="0.06" stroke-width="4"/>
+  <!-- thermal peak: a mountain summit, lime hot at the top -->
+  <path d="M512 250 L760 774 H264 Z" fill="#c6ff3d"/>
+  <path d="M512 250 L636 512 L512 600 L388 512 Z" fill="#0a0b0d" fill-opacity="0.18"/>
+  <!-- summit flag -->
+  <circle cx="512" cy="250" r="34" fill="#0a0b0d"/>
+  <circle cx="512" cy="250" r="34" stroke="#c6ff3d" stroke-width="10"/>
+  <!-- baseline track -->
+  <rect x="232" y="800" width="560" height="20" rx="10" fill="#c6ff3d" fill-opacity="0.35"/>
+</svg>

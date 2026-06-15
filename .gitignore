@@ -8,10 +8,11 @@ node_modules/
 .venv/
 venv/
 
-# Bundle build staging + downloaded runtimes (CPython / Node)
+# Bundle build staging + downloaded runtimes (CPython / Node / Bun)
 .bundle-build/
 **/runtime/node/
 **/runtime/python/
+**/runtime/bun/
 
 # openclaw-bundle staged output + downloaded node binary
 apps/openclaw/openclaw-bundle/bin/

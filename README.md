@@ -15,16 +15,22 @@ This repo plays two roles:
 
 ## Apps
 
-All apps are `kind: node-service` and currently ship `darwin-arm64`.
+Most apps are `kind: node-service` and currently ship `darwin-arm64`. The exception is **Peak**, a standalone
+[Tauri 2](https://tauri.app) app (desktop + mobile) authored here rather than vendored from an upstream — see
+[`apps/peak`](apps/peak).
 
 | App | Dir | Upstream | Latest release |
 |-----|-----|----------|----------------|
+| Peak (Tauri desktop + mobile) | [`apps/peak`](apps/peak) | _original (Claude Design `Peak.dc.html`)_ | _pending_ (`peak-v0.1.0`) |
 | Vibe-Trading | [`apps/vibe-trading`](apps/vibe-trading) | [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) | `vibe-trading-v0.1.9` |
 | Hermes Web UI | [`apps/hermes`](apps/hermes) | [nesquena/hermes-webui](https://github.com/nesquena/hermes-webui) | _pending_ (`hermes-v0.51.247`) |
 | OpenDesign | [`apps/open-design`](apps/open-design) | [nexu-io/open-design](https://github.com/nexu-io/open-design) | `opendesign-v1.1.0` |
 | OpenClaw | [`apps/openclaw`](apps/openclaw) | [openclaw/openclaw](https://github.com/openclaw/openclaw) | `openclaw-v1.0.0` |
 | Rowboat (in-shell, unregistered) | [`apps/rowboat`](apps/rowboat) | [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat) | — (superseded by Rowboat Desktop) |
 | Rowboat Desktop (.app) | [`apps/rowboat-desktop`](apps/rowboat-desktop) | [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat) `apps/x` | _pending_ (`rowboat-desktop-v0.1.0`) |
+| Grist Desktop (.app) | [`apps/grist-desktop`](apps/grist-desktop) | [gristlabs/grist-desktop](https://github.com/gristlabs/grist-desktop) (embeds [grist-core](https://github.com/gristlabs/grist-core)) | _pending_ (`grist-desktop-v0.3.12`) |
+| Pile (.app) | [`apps/pile`](apps/pile) | [UdaraJay/Pile](https://github.com/UdaraJay/Pile) | _pending_ (`pile-v1.0.0`) |
+| Activepieces (in-shell + .app) | [`apps/activepieces`](apps/activepieces) | [activepieces/activepieces](https://github.com/activepieces/activepieces) `0.85.2` | _pending_ (`activepieces-v0.85.2`) |
 
 See each app's own `README.md` for its pinned upstream commit, exact build command, build dependencies,
 and the changes layered on top of upstream.

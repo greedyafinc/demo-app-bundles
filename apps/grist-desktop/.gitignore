@@ -1,0 +1,19 @@
+dist
+ext/node_modules
+node_modules
+# links to core
+buildtools
+/app
+stubs
+tsconfig.json
+_build
+stash
+NOTES.txt
+dock
+.flatpak-tmp/
+
+# UnifiedApp bundling: grist-core is fetched at build time (see build-bundle.sh),
+# not committed; release artifacts and build scratch are regenerable.
+/core/
+.bundle-build/
+*.zip
